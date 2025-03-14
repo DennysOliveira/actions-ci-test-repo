@@ -15,37 +15,38 @@ jobs:
   triggered-deploy:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.tmp_stage_name.outputs.branch }}
     steps:
-      - name: Create environment name based on commit SHA with hyphen
-        run: |
-          short_sha=$(echo "${GITHUB_SHA}" | cut -c1-6)
-          echo "branch=tst-${short_sha}" >> $GITHUB_ENV
-          echo "Generated environment name: tst-${short_sha}"
+      - name: Extract commit SHA
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+        id: extract_sha
+
+      - name: Build temporary stage name with hyphen and 8-char SHA
+        run: echo "branch=tst-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+        id: tmp_stage_name
+
+      - name: Display environment name for confirmation
+        run: echo "Generated environment name: ${{ steps.tmp_stage_name.outputs.branch }}"
 
       - uses: github/branch-deploy@v10.3.1
         id: branch-deploy
         with:
           trigger: ".deploy"
-          environment: ${{ env.branch }}
+          environment: ${{ steps.tmp_stage_name.outputs.branch }}
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.branch-deploy.outputs.sha }}
 
-      - name: fake noop deploy on environment based on the branch name
+      - name: Fake noop deploy on environment
         if: ${{ steps.branch-deploy.outputs.continue == 'true' && steps.branch-deploy.outputs.noop == 'true' }}
         run: echo "I am doing a fake noop deploy on environment ${{ steps.branch-deploy.outputs.environment }}"
 
-      - name: fake regular deploy
+      - name: Fake regular deploy
         if: ${{ steps.branch-deploy.outputs.continue == 'true' && steps.branch-deploy.outputs.noop != 'true' }}
         run: echo "Regular deploys are not allowed for this repository. Please use noops."
 
-      - name: pass deploy-branch outputs to the next job
-        if: ${{ steps.branch-deploy.outputs.continue == 'true' }}
-        id: pass-deploy-branch-outputs
-        run: echo "::set-output name=environment::${{ steps.branch-deploy.outputs.environment }}"
-
-  # Given a successful deploy, we write a message as a comment on the PR
   write-comment:
     needs: triggered-deploy
     runs-on: ubuntu-latest
@@ -59,6 +60,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Deployed to environment ${{ steps.branch-deploy.outputs.environment }}'
+              body: 'Deployed to environment ${{ needs.triggered-deploy.outputs.environment }}'
             })
-  
