@@ -1,11 +1,9 @@
 name: "branch deploy demo"
 
-# The workflow to execute on is comments that are newly created
 on:
   issue_comment:
     types: [created]
 
-# Permissions needed for reacting and adding comments for IssueOps commands
 permissions:
   pull-requests: write
   deployments: write
@@ -15,37 +13,37 @@ permissions:
 
 jobs:
   triggered-deploy:
-    if: ${{ github.event.issue.pull_request }} # only run on pull request comments
+    if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-latest
     steps:
-      - name: Create stage/environment name branch based
-        run: echo "branch=$(echo tst-${GITHUB_REF#refs/heads/} | sed 's/\//_/g' | sed 's/-/_/g' | cut -c 1-20)" >> $GITHUB_ENV
+      - name: Create environment name based on commit SHA with hyphen
+        run: |
+          short_sha=$(echo "${GITHUB_SHA}" | cut -c1-6)
+          echo "branch=tst-${short_sha}" >> $GITHUB_ENV
+          echo "Generated environment name: tst-${short_sha}"
 
-      # Execute IssueOps branch deployment logic, hooray!
-      # This will be used to "gate" all future steps below and conditionally trigger steps/deployments
       - uses: github/branch-deploy@v10.3.1
         id: branch-deploy
         with:
           trigger: ".deploy"
           environment: ${{ env.branch }}
 
-      # Checkout your project's repository based on the commit SHA provided by the branch-deploy step
-      # It is important to only ever operate on the commit SHA (where possible) as commit SHA's are immutable and you know exactly what you are deploying
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.branch-deploy.outputs.sha }}
 
-      # Do some fake "noop" deployment logic here
-      # conditionally run a noop deployment
       - name: fake noop deploy on environment based on the branch name
         if: ${{ steps.branch-deploy.outputs.continue == 'true' && steps.branch-deploy.outputs.noop == 'true' }}
         run: echo "I am doing a fake noop deploy on environment ${{ steps.branch-deploy.outputs.environment }}"
 
-      # Do some fake "regular" deployment logic here
-      # conditionally run a regular deployment
       - name: fake regular deploy
         if: ${{ steps.branch-deploy.outputs.continue == 'true' && steps.branch-deploy.outputs.noop != 'true' }}
         run: echo "Regular deploys are not allowed for this repository. Please use noops."
+
+      - name: pass deploy-branch outputs to the next job
+        if: ${{ steps.branch-deploy.outputs.continue == 'true' }}
+        id: pass-deploy-branch-outputs
+        run: echo "::set-output name=environment::${{ steps.branch-deploy.outputs.environment }}"
 
   # Given a successful deploy, we write a message as a comment on the PR
   write-comment:
