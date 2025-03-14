@@ -26,9 +26,6 @@ jobs:
         run: echo "branch=tst-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
         id: tmp_stage_name
 
-      - name: Display environment name for confirmation
-        run: echo "Generated environment name: ${{ steps.tmp_stage_name.outputs.branch }}"
-
       - uses: github/branch-deploy@v10.3.1
         id: branch-deploy
         with:
