@@ -9,4 +9,6 @@
       console.log(message)
     }
   }
+
+  logMany('Hello, World!', 5)
 })();
