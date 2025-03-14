@@ -18,12 +18,21 @@ jobs:
     if: ${{ github.event.issue.pull_request }} # only run on pull request comments
     runs-on: ubuntu-latest
     steps:
+      # Take branch name to be passed in as environment on branch-deploy
+      #  echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+      - name: Set branch name as environment
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+      
+      - name: Create stage/environment name branch based
+        run: echo "branch=$(echo tst-${{ env.branch }} | sed 's/\//_/g' | sed 's/-/_/g' | cut -c 1-20)" >> $GITHUB_ENV
+
       # Execute IssueOps branch deployment logic, hooray!
       # This will be used to "gate" all future steps below and conditionally trigger steps/deployments
       - uses: github/branch-deploy@v10.3.1
         id: branch-deploy
         with:
           trigger: ".deploy"
+          environment: ${{ env.branch }}
 
       # Run your deployment logic for your project here - examples seen below
 
