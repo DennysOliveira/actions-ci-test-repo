@@ -18,12 +18,8 @@ jobs:
     if: ${{ github.event.issue.pull_request }} # only run on pull request comments
     runs-on: ubuntu-latest
     steps:
-      # Generate a default environment name to ensure we have a unique environment name for each branch
-      - name: Set branch name as environment
-        run: echo "tmpbranchname=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-      
       - name: Create stage/environment name branch based
-        run: echo "branch=$(echo tst-${{ env.branch }} | sed 's/\//_/g' | sed 's/-/_/g' | cut -c 1-20)" >> $GITHUB_ENV
+        run: echo "branch=$(echo tst-${GITHUB_REF#refs/heads/} | sed 's/\//_/g' | sed 's/-/_/g' | cut -c 1-20)" >> $GITHUB_ENV
 
       # Execute IssueOps branch deployment logic, hooray!
       # This will be used to "gate" all future steps below and conditionally trigger steps/deployments
@@ -57,7 +53,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Write a comment on the PR
-        if: ${{ needs.triggered-deploy.outputs.continue == 'true' }}
         uses: actions/github-script@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
