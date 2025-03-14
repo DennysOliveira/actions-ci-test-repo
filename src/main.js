@@ -10,5 +10,5 @@
     }
   }
 
-  logMany('Hello, World!', 5)
+  logMany('Hello, World!', 5) //
 })();
