@@ -30,7 +30,7 @@ jobs:
         id: branch-deploy
         with:
           trigger: ".deploy"
-          outdated_mode: "disabled"
+          update_branch: "disabled"
           environment: ${{ steps.tmp_stage_name.outputs.branch }}
 
       - uses: actions/checkout@v4
