@@ -35,9 +35,9 @@ jobs:
 
       # Do some fake "noop" deployment logic here
       # conditionally run a noop deployment
-      - name: fake noop deploy
+      - name: fake noop deploy on environment based on the branch name
         if: ${{ steps.branch-deploy.outputs.continue == 'true' && steps.branch-deploy.outputs.noop == 'true' }}
-        run: echo "I am doing a fake noop deploy"
+        run: echo "I am doing a fake noop deploy on environment ${{ steps.branch-deploy.outputs.environment }}"
 
       # Do some fake "regular" deployment logic here
       # conditionally run a regular deployment
